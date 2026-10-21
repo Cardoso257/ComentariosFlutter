@@ -1,0 +1,40 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /publicacoes/{publicacaoId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null
+        && request.resource.data.keys().hasAll(['texto', 'nome', 'uid', 'criadoEm'])
+        && request.resource.data.keys().hasOnly(['texto', 'nome', 'uid', 'criadoEm'])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.texto is string
+        && request.resource.data.texto.size() > 0
+        && request.resource.data.texto.size() <= 2000
+        && request.resource.data.nome is string
+        && request.resource.data.nome.size() > 0
+        && request.resource.data.criadoEm == request.time;
+      allow update, delete: if false;
+    }
+
+match /publicacoes/{publicacaoId}/comentarios/{comentarioId} {
+  allow read: if request.auth != null;
+
+  allow create: if request.auth != null
+    && exists(/databases/$(database)/documents/publicacoes/$(publicacaoId))
+    && request.resource.data.keys().hasAll(['texto', 'nome', 'uid', 'publicacaoId', 'criadoEm'])
+    && request.resource.data.keys().hasOnly(['texto', 'nome', 'uid', 'publicacaoId', 'criadoEm'])
+    && request.resource.data.uid == request.auth.uid
+    && request.resource.data.publicacaoId == publicacaoId
+    && request.resource.data.texto is string
+    && request.resource.data.texto.size() > 0
+    && request.resource.data.texto.size() <= 1000
+    && request.resource.data.nome is string
+    && request.resource.data.nome.size() > 0
+    && request.resource.data.criadoEm == request.time;
+
+  allow delete: if request.auth != null && resource.data.uid == request.auth.uid;
+  allow update: if false;
+}
+
+  }
+}
